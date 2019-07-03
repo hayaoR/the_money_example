@@ -8,13 +8,10 @@ impl Dollar {
             amount: x,
         }
     }
-    fn times(&self, multiplier: u32) {
-
+    fn times(&mut self, multiplier: u32) {
+        self.amount *= multiplier;
     }
 }
-
-
-
 
 #[cfg(test)]
 mod test {
@@ -22,9 +19,8 @@ mod test {
 
     #[test]
     fn mul_test() {
-        let five = Dollar::new(5);
+        let mut five = Dollar::new(5);
         five.times(2);
         assert_eq!(10, five.amount);
-        
     }
 }
