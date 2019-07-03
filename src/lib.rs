@@ -58,13 +58,7 @@ mod test {
     fn eq_test() {
         assert_eq!(Money::dollar(5), Money::dollar(5));
         assert!(Money::dollar(5) != Money::dollar(6));
-        assert!(Money::dollar(5)!= Money::franc(6));
+        assert!(Money::dollar(5) != Money::franc(6));
     }
     
-     #[test]
-    fn mul_test_franc() {
-        let five = Money::franc(5);
-        assert_eq!(Money::franc(10), five.times(2));
-        assert_eq!(Money::franc(15), five.times(3));
-    }
 }
