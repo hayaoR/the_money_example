@@ -1,26 +1,40 @@
 #[derive(Debug)]
-struct Dollar {
+struct Money {
     amount: u32,
 }
 
-impl Dollar {
-    fn new(x: u32) -> Dollar {
-        Dollar {
+impl Money {
+    fn new(x: u32) -> Money {
+        Money {
             amount: x,
         }
     }
-    fn times(&self, multiplier: u32) -> Dollar {
-        Dollar { 
+    fn times(&self, multiplier: u32) -> Money {
+        Money { 
             amount: self.amount * multiplier,
         }
     }
 }
 
-impl PartialEq for Dollar {
+impl PartialEq for Money {
     fn eq(&self, other: &Self) -> bool {
         self.amount == other.amount 
     }
 }
+#[derive(Debug)]
+struct Dollar {
+    amount: u32,
+}
+
+impl Dollar {
+    fn new(x: u32) -> Money {
+        Money {
+            amount: x,
+        }
+    }
+}
+
+
 
 #[derive(Debug)]
 struct Franc {
@@ -28,23 +42,13 @@ struct Franc {
 }
 
 impl Franc {
-    fn new(x: u32) -> Franc {
-        Franc {
+    fn new(x: u32) -> Money {
+        Money {
             amount: x,
-        }
-    }
-    fn times(&self, multiplier: u32) -> Franc {
-        Franc { 
-            amount: self.amount * multiplier,
         }
     }
 }
 
-impl PartialEq for Franc {
-    fn eq(&self, other: &Self) -> bool {
-        self.amount == other.amount 
-    }
-}
 #[cfg(test)]
 mod test {
     use super::*;
