@@ -18,7 +18,7 @@ impl Dollar {
 
 impl PartialEq for Dollar {
     fn eq(&self, other: &Self) -> bool {
-        true
+        self.amount == other.amount 
     }
 }
 
@@ -38,5 +38,6 @@ mod test {
     #[test]
     fn eq_test() {
         assert_eq!(Dollar::new(5), Dollar::new(5));
+        assert!(Dollar::new(5) != Dollar::new(6));
     }
 }
