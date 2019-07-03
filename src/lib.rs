@@ -1,3 +1,4 @@
+#[derive(Debug)]
 struct Dollar {
     amount: u32,
 }
@@ -15,6 +16,12 @@ impl Dollar {
     }
 }
 
+impl PartialEq for Dollar {
+    fn eq(&self, other: &Self) -> bool {
+        true
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -26,5 +33,10 @@ mod test {
         assert_eq!(10, product.amount);
         product = five.times(3);
         assert_eq!(15, product.amount);
+    }
+
+    #[test]
+    fn eq_test() {
+        assert_eq!(Dollar::new(5), Dollar::new(5));
     }
 }

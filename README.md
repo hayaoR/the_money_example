@@ -1,3 +1,3 @@
-# the money examplemut 
+# the money example
 
 ## Kent Beckのテスト駆動開発をRustで書いていく
