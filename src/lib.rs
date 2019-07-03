@@ -1,51 +1,45 @@
+#[derive(Debug, PartialEq, Clone, Copy)]
+enum Currency {
+    USD,
+    CHE,
+}
+
 #[derive(Debug)]
 struct Money {
     amount: u32,
+    currency: Currency,
 }
 
 impl Money {
-    fn new(x: u32) -> Money {
+    fn new(x: u32, currecy: Currency) -> Money {
         Money {
             amount: x,
+            currency: currecy,
         }
     }
     fn times(&self, multiplier: u32) -> Money {
         Money { 
             amount: self.amount * multiplier,
+            currency: self.currency,
+        }
+    }
+    fn dollar(x: u32) -> Money {
+        Money {
+            amount: x,
+            currency: Currency::USD,
+        }
+    }
+    fn franc(x: u32) -> Money {
+        Money {
+            amount: x,
+            currency: Currency::CHE,
         }
     }
 }
 
 impl PartialEq for Money {
     fn eq(&self, other: &Self) -> bool {
-        self.amount == other.amount 
-    }
-}
-#[derive(Debug)]
-struct Dollar {
-    amount: u32,
-}
-
-impl Dollar {
-    fn new(x: u32) -> Money {
-        Money {
-            amount: x,
-        }
-    }
-}
-
-
-
-#[derive(Debug)]
-struct Franc {
-    amount: u32,
-}
-
-impl Franc {
-    fn new(x: u32) -> Money {
-        Money {
-            amount: x,
-        }
+        self.currency == other.currency && self.amount == other.amount 
     }
 }
 
@@ -55,21 +49,22 @@ mod test {
 
     #[test]
     fn mul_test() {
-        let five = Dollar::new(5);
-        assert_eq!(Dollar::new(10), five.times(2));
-        assert_eq!(Dollar::new(15), five.times(3));
+        let five = Money::dollar(5);
+        assert_eq!(Money::dollar(10), five.times(2));
+        assert_eq!(Money::dollar(15), five.times(3));
     }
 
     #[test]
     fn eq_test() {
-        assert_eq!(Dollar::new(5), Dollar::new(5));
-        assert!(Dollar::new(5) != Dollar::new(6));
+        assert_eq!(Money::dollar(5), Money::dollar(5));
+        assert!(Money::dollar(5) != Money::dollar(6));
+        assert!(Money::dollar(5)!= Money::franc(6));
     }
     
      #[test]
     fn mul_test_franc() {
-        let five = Franc::new(5);
-        assert_eq!(Franc::new(10), five.times(2));
-        assert_eq!(Franc::new(15), five.times(3));
+        let five = Money::franc(5);
+        assert_eq!(Money::franc(10), five.times(2));
+        assert_eq!(Money::franc(15), five.times(3));
     }
 }
