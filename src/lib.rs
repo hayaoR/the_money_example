@@ -6,7 +6,7 @@ enum Currency {
     CHE,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Money {
     amount: u32,
     currency: Currency,
@@ -39,7 +39,11 @@ impl Money {
     }
 }
 
-impl Expression for Money {}
+impl Expression for Money {
+    fn reduced(&self) -> Money {
+        self.clone()
+    }
+}
 
 impl PartialEq for Money {
     fn eq(&self, other: &Self) -> bool {
@@ -57,7 +61,9 @@ impl Add for Money {
     }
 }
 
-trait Expression {}
+trait Expression {
+    fn reduced(&self) -> Money;
+}
 
 struct Bank {}
 
@@ -66,8 +72,33 @@ impl Bank {
         Bank {}
     }
 
-    fn reduced(&self, sum: Money, currency: Currency) -> Money {
-        Money::dollar(10)
+    fn reduced<T> (source: T) -> Money 
+        where T: Expression
+    {
+        source.reduced()
+    }
+}
+
+struct Sum {
+    augend: Money,
+    addend: Money,
+}
+
+impl Sum {
+    fn new(audend: Money, addend: Money) -> Sum {
+        Sum {
+            augend: audend,
+            addend: addend,
+        }
+    }
+}
+
+impl Expression for Sum {
+    fn reduced(&self) -> Money {
+        Money {
+            amount: self.augend.amount + self.addend.amount,
+            currency: self.augend.currency,
+        }
     }
 }
 
@@ -89,14 +120,17 @@ mod test {
         assert!(Money::dollar(5) != Money::franc(6));
     }
 
+    #[test]
+    fn reduce_sum_test() {
+        let sum = Sum::new(Money::dollar(3), Money::dollar(4));
+        let result = Bank::reduced(sum);
+        assert_eq!(Money::dollar(7), result);
+    }
 
     #[test]
-    fn add_test() {
-        let five = Money::dollar(5);
-        let sum = five.times(5);
-        let bank = Bank::new();
-        let reduced = bank.reduced(sum, Currency::USD);
-        assert_eq!(Money::dollar(10), reduced); 
+    fn reduce_money_test() {
+       let result = Bank::reduced(Money::dollar(1)); 
+       assert_eq!(Money::dollar(1), result);
     }
     
 }
