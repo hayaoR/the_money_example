@@ -1,6 +1,7 @@
 use std::ops::Add;
+use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Hash, Eq)]
 enum Currency {
     USD,
     CHE,
@@ -31,6 +32,7 @@ impl Money {
             currency: Currency::USD,
         }
     }
+
     fn franc(x: u32) -> Money {
         Money {
             amount: x,
@@ -40,8 +42,9 @@ impl Money {
 }
 
 impl Expression for Money {
-    fn reduced(&self, currency: Currency) -> Money {
-        let rate = if self.currency == Currency::CHE && currency == Currency::USD { 2 } else { 1 };
+    fn reduced(&self, bank: &Bank, currency: Currency) -> Money {
+        let rate = bank.get_rate(self.currency, currency);
+        //let rate = if self.currency == Currency::CHE && currency == Currency::USD { 2 } else { 1 };
         Money {
             amount: self.amount / rate,
             currency: currency,
@@ -66,23 +69,34 @@ impl Add for Money {
 }
 
 trait Expression {
-    fn reduced(&self, currecy: Currency) -> Money;
+    fn reduced(&self, bank: &Bank, currency: Currency) -> Money;
 }
 
-struct Bank {}
+struct Bank {
+    map: HashMap<(Currency, Currency), u32>, 
+}
 
 impl Bank {
     fn new() -> Bank {
-        Bank {}
+        Bank {
+            map: HashMap::new(),
+        }
     }
 
-    fn reduced<T> (source: T, currency: Currency) -> Money 
+    fn reduced<T> (&self, source: T, currency: Currency) -> Money 
         where T: Expression
     {
-        source.reduced(currency)
+        source.reduced(&self, currency)
     }
 
-    fn add_rate (cur1: Currency, cur2: Currency, rate: u32) {
+    fn add_rate (&self, cur1: Currency, cur2: Currency, rate: u32) {
+    }
+
+    fn get_rate (&self, cur1: Currency, cur2: Currency) -> u32 {
+        if cur1 == cur2 {
+            return 1
+        }
+        *self.map.get(&(cur1, cur2)).unwrap_or(&2)
     }
 }
 
@@ -101,7 +115,7 @@ impl Sum {
 }
 
 impl Expression for Sum {
-    fn reduced(&self, currency: Currency) -> Money {
+    fn reduced(&self, bank: &Bank, currency: Currency) -> Money {
         Money {
             amount: self.augend.amount + self.addend.amount,
             currency: self.augend.currency,
@@ -129,21 +143,30 @@ mod test {
 
     #[test]
     fn reduce_sum_test() {
+        let bank = Bank::new();
         let sum = Sum::new(Money::dollar(3), Money::dollar(4));
-        let result = Bank::reduced(sum, Currency::USD);
+        let result = bank.reduced(sum, Currency::USD);
         assert_eq!(Money::dollar(7), result);
     }
 
     #[test]
     fn reduce_money_test() {
-       let result = Bank::reduced(Money::dollar(1), Currency::USD); 
-       assert_eq!(Money::dollar(1), result);
+        let bank = Bank::new();
+        let result = bank.reduced(Money::dollar(1), Currency::USD); 
+        assert_eq!(Money::dollar(1), result);
     }
     
     #[test]
     fn reduce_money_different_currency() {
-        Bank::add_rate(Currency::CHE, Currency::USD, 2);
-        let result = Bank::reduced(Money::franc(2), Currency::USD);
+        let bank = Bank::new();
+        bank.add_rate(Currency::CHE, Currency::USD, 2);
+        let result = bank.reduced(Money::franc(2), Currency::USD);
         assert_eq!(Money::dollar(1), result);
+    }
+
+    #[test]
+    fn rate_test() {
+        let bank = Bank::new();
+        assert_eq!(1, bank.get_rate(Currency::USD, Currency::USD));
     }
 }
