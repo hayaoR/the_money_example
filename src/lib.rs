@@ -44,7 +44,6 @@ impl Money {
 impl Expression for Money {
     fn reduced(&self, bank: &Bank, currency: Currency) -> Money {
         let rate = bank.get_rate(self.currency, currency);
-        //let rate = if self.currency == Currency::CHE && currency == Currency::USD { 2 } else { 1 };
         Money {
             amount: self.amount / rate,
             currency: currency,
@@ -59,11 +58,11 @@ impl PartialEq for Money {
 }
 
 impl Add for Money {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        Self {
-            amount: self.amount + other.amount,
-            currency: self.currency,
+    type Output = Sum;
+    fn add(self, other: Self) -> Sum {
+        Sum {
+            augend: self,
+            addend: other,
         }
     }
 }
@@ -89,18 +88,20 @@ impl Bank {
         source.reduced(&self, currency)
     }
 
-    fn add_rate (&self, cur1: Currency, cur2: Currency, rate: u32) {
+    fn add_rate (&mut self, from: Currency, to: Currency, rate: u32) {
+        self.map.insert((from, to), rate);
     }
 
-    fn get_rate (&self, cur1: Currency, cur2: Currency) -> u32 {
-        if cur1 == cur2 {
+    fn get_rate (&self, from: Currency, to: Currency) -> u32 {
+        if from == to {
             return 1
         }
-        *self.map.get(&(cur1, cur2)).unwrap_or(&2)
+        *self.map.get(&(from, to)).unwrap_or(&1)
     }
 }
 
-struct Sum {
+struct Sum 
+{
     augend: Money,
     addend: Money,
 }
@@ -117,7 +118,7 @@ impl Sum {
 impl Expression for Sum {
     fn reduced(&self, bank: &Bank, currency: Currency) -> Money {
         Money {
-            amount: self.augend.amount + self.addend.amount,
+            amount: self.augend.reduced(bank, currency).amount + self.addend.reduced(bank, currency).amount,
             currency: self.augend.currency,
         }
     }
@@ -158,7 +159,7 @@ mod test {
     
     #[test]
     fn reduce_money_different_currency() {
-        let bank = Bank::new();
+        let mut bank = Bank::new();
         bank.add_rate(Currency::CHE, Currency::USD, 2);
         let result = bank.reduced(Money::franc(2), Currency::USD);
         assert_eq!(Money::dollar(1), result);
@@ -168,5 +169,16 @@ mod test {
     fn rate_test() {
         let bank = Bank::new();
         assert_eq!(1, bank.get_rate(Currency::USD, Currency::USD));
+    }
+
+    #[test]
+    fn mixed_add_test() {
+        let five_backs = Money::dollar(5);
+        let ten_francs = Money::franc(10);
+        let mut bank = Bank::new();
+
+        bank.add_rate(Currency::CHE, Currency::USD, 2);
+        let result = bank.reduced(five_backs + ten_francs, Currency::USD);
+        assert_eq!(Money::dollar(10), result);
     }
 }
