@@ -61,8 +61,8 @@ impl Add for Money {
     type Output = Sum;
     fn add(self, other: Self) -> Sum {
         Sum {
-            augend: self,
-            addend: other,
+            augend: Box::new(self),
+            addend: Box::new(other),
         }
     }
 }
@@ -102,14 +102,15 @@ impl Bank {
 
 struct Sum 
 {
-    augend: Money,
-    addend: Money,
+    augend: Box<dyn Expression>,
+    addend: Box<dyn Expression>,
 }
 
-impl Sum {
-    fn new(audend: Money, addend: Money) -> Sum {
-        Sum {
-            augend: audend,
+impl Sum
+{
+    fn new(augend: Box<Expression>, addend: Box<Expression>) -> Sum {
+       Sum {
+            augend: augend,
             addend: addend,
         }
     }
@@ -119,7 +120,17 @@ impl Expression for Sum {
     fn reduced(&self, bank: &Bank, currency: Currency) -> Money {
         Money {
             amount: self.augend.reduced(bank, currency).amount + self.addend.reduced(bank, currency).amount,
-            currency: self.augend.currency,
+            currency: currency,
+        }
+    }
+}
+
+impl Add <Box<Expression>> for Sum {
+    type Output = Sum;
+    fn add(self, other: Box<Expression>) -> Sum {
+        Sum {
+            augend: Box::new(self),
+            addend: other,
         }
     }
 }
@@ -145,7 +156,7 @@ mod test {
     #[test]
     fn reduce_sum_test() {
         let bank = Bank::new();
-        let sum = Sum::new(Money::dollar(3), Money::dollar(4));
+        let sum = Sum::new(Box::new(Money::dollar(3)), Box::new(Money::dollar(4)));
         let result = bank.reduced(sum, Currency::USD);
         assert_eq!(Money::dollar(7), result);
     }
@@ -180,5 +191,18 @@ mod test {
         bank.add_rate(Currency::CHE, Currency::USD, 2);
         let result = bank.reduced(five_backs + ten_francs, Currency::USD);
         assert_eq!(Money::dollar(10), result);
+    }
+
+    #[test]
+    fn sumplusmoney_test() {
+        let five_backs = Money::dollar(5);
+        let five_backs2 = five_backs.clone();
+        let ten_francs = Money::franc(10);
+        let mut bank = Bank::new();
+
+        bank.add_rate(Currency::CHE, Currency::USD, 2);
+        let sum = Sum::new(Box::new(five_backs), Box::new(ten_francs)) + Box::new(five_backs2);
+        let result = bank.reduced(sum, Currency::USD);
+        assert_eq!(Money::dollar(15), result);
     }
 }
