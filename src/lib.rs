@@ -1,4 +1,5 @@
 use std::ops::Add;
+use std::ops::Mul;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone, Copy, Hash, Eq)]
@@ -20,12 +21,7 @@ impl Money {
             currency: currecy,
         }
     }
-    fn times(&self, multiplier: u32) -> Money {
-        Money { 
-            amount: self.amount * multiplier,
-            currency: self.currency,
-        }
-    }
+
     fn dollar(x: u32) -> Money {
         Money {
             amount: x,
@@ -49,6 +45,23 @@ impl Expression for Money {
             currency: currency,
         }
     }
+
+    fn times(&self, multiplier: u32) -> Box<Sum> {
+        Box::new (Sum { 
+            augend: Box::new( 
+            Money { 
+                amount: self.amount * multiplier,
+                currency: self.currency,
+            }),
+            addend: Box::new(
+                Money {
+                    amount: 0,
+                    currency: self.currency,
+                }
+            ),
+        }
+        )
+    }
 }
 
 impl PartialEq for Money {
@@ -67,8 +80,20 @@ impl Add for Money {
     }
 }
 
+impl Mul<u32> for Money {
+    type Output = Self;
+
+    fn mul(self, rhs: u32) -> Self {
+        Money {
+            amount: self.amount * rhs,
+            currency: self.currency,
+        }
+    }
+}
+
 trait Expression {
     fn reduced(&self, bank: &Bank, currency: Currency) -> Money;
+    fn times(&self, multiplier: u32) -> Box<Sum>;
 }
 
 struct Bank {
@@ -102,8 +127,8 @@ impl Bank {
 
 struct Sum 
 {
-    augend: Box<dyn Expression>,
-    addend: Box<dyn Expression>,
+    augend: Box<Expression>,
+    addend: Box<Expression>,
 }
 
 impl Sum
@@ -122,6 +147,13 @@ impl Expression for Sum {
             amount: self.augend.reduced(bank, currency).amount + self.addend.reduced(bank, currency).amount,
             currency: currency,
         }
+    }
+
+    fn times(&self, multiplier: u32) -> Box<Sum> {
+        Box::new( Sum {
+            augend: self.augend.times(multiplier),
+            addend: self.addend.times(multiplier),
+        })
     }
 }
 
@@ -142,8 +174,9 @@ mod test {
     #[test]
     fn mul_test() {
         let five = Money::dollar(5);
-        assert_eq!(Money::dollar(10), five.times(2));
-        assert_eq!(Money::dollar(15), five.times(3));
+        let five2 = five.clone();
+        assert_eq!(Money::dollar(10), five*2);
+        assert_eq!(Money::dollar(15), five2*3);
     }
 
     #[test]
@@ -194,7 +227,7 @@ mod test {
     }
 
     #[test]
-    fn sumplusmoney_test() {
+    fn sum_plus_money_test() {
         let five_backs = Money::dollar(5);
         let five_backs2 = five_backs.clone();
         let ten_francs = Money::franc(10);
@@ -204,5 +237,18 @@ mod test {
         let sum = Sum::new(Box::new(five_backs), Box::new(ten_francs)) + Box::new(five_backs2);
         let result = bank.reduced(sum, Currency::USD);
         assert_eq!(Money::dollar(15), result);
+    }
+
+    #[test]
+    fn sum_times_test() {
+        let five_backs = Money::dollar(5);
+        let ten_francs = Money::franc(10);
+
+        let mut bank = Bank::new();
+        bank.add_rate(Currency::CHE, Currency::USD, 2);
+
+        let sum = Sum::new(Box::new(five_backs), Box::new(ten_francs)).times(2);
+        let result = bank.reduced(*sum, Currency::USD);
+        assert_eq!(Money::dollar(20), result);
     }
 }
